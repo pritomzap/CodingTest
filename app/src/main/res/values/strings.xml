@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">meldCXCodingTest</string>
+    <string name="collected_successfully">Collected Successfully</string>
+    <string name="search_here">Search here</string>
+    <string name="no_item_loaded">No item loaded</string>
+    <string name="no_url_inputed">Please insert an url</string>
+    <string name="permission_error">You must have to grant required permissons</string>
+    <string name="insertion_success">Data inserted successfully</string>
+    <string name="capture_button">Capture</string>
+    <string name="history_button">Histories</string>
+    <string name="visit_again_button">Visit again</string>
+    <string name="delete_button">Delete</string>
+</resources>
