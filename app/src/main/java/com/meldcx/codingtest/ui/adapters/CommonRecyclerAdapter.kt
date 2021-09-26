@@ -4,6 +4,10 @@ import android.view.ViewGroup
 import androidx.databinding.ViewDataBinding
 import androidx.recyclerview.widget.RecyclerView
 
+/*
+* Simple common recyclerview created by me.
+* details in:
+* */
 class CommonRecyclerAdapter<T>: RecyclerView.Adapter<BaseViewHolder<T>>(){
     var listOfItems:MutableList<T>? = mutableListOf()
     set(value) {

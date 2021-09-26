@@ -8,7 +8,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-
+/*
+* A simple base view model class to handle the Flow comes from the repository
+* It just takes a Flow, check wheather gets any exception and convert it to livedata
+* flowHandler takes a liveData and a lamda,the lamda is the suspend function that gives the data from repository, and when data comes with or without exception,we just make a baseDataModel and emit it with viewModel
+* FlowHandlerLive is the same but it just returns the livedata, rather then puting into the livedata
+* */
 abstract class BaseViewModel(private val application: Application): AndroidViewModel(application) {
     suspend fun <T>flowHandler(responseLiveData: MutableLiveData<BaseDataModel<T>>, flowValue:suspend ()-> Flow<T>) = viewModelScope.launch{
         flowValue.invoke()

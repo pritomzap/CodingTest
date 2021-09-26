@@ -98,6 +98,7 @@ dependencies {
     implementation ("com.google.android.material:material:1.4.0")
 
     implementation ("com.google.dagger:hilt-android:${Versions.hiltVersion}")
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
     kapt ("com.google.dagger:hilt-compiler:${Versions.hiltVersion}")
 
     implementation("androidx.room:room-runtime:${Versions.roomVersion}")

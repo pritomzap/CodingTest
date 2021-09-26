@@ -10,6 +10,8 @@ import com.meldcx.codingtest.R
 import com.meldcx.codingtest.databinding.CustomProgressDialogBinding
 
 
+
+
 object CustomProgressDialog {
 
     private lateinit var customProgressDialog: Dialog

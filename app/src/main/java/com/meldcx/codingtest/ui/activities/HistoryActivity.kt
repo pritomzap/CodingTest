@@ -24,6 +24,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.File
 
+
+/*
+* HistoryActivity uses ExperimentalCoroutinesApi
+* Uses databinding layout the setContentview
+* It has a recyclerView to show all the history items collected form database.
+* @AndroidEntryPoint annotation added, so you can inject any dependencies.
+* */
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class HistoryActivity : BaseActivity() {
@@ -42,6 +49,7 @@ class HistoryActivity : BaseActivity() {
 
 
     private fun setObserver() {
+        //Observer of List<HistoryEntity> comes from dirctViewModel
         viewModel.historyList.observe(this){baseData->
             if (baseData.isSuccess && !baseData.data.isNullOrEmpty())
                 historyAdapter.listOfItems = baseData.data?.toMutableList()
@@ -49,6 +57,8 @@ class HistoryActivity : BaseActivity() {
     }
 
     private fun buildUi() {
+
+        //Set up commonAdapter of Type HistoryEntity
         historyAdapter = CommonRecyclerAdapter()
         historyAdapter.apply {
             expressionViewHolderBinding = { eachItem, viewBinding, _ ->
@@ -76,6 +86,8 @@ class HistoryActivity : BaseActivity() {
         }
 
         binding.apply {
+            //Simple custom textChange listener to filter items.
+            //this will send to direct @Dao and will retrive filtered data list
             layoutSearchView.etUrlInput.addTextChangedListener(object :CustomTextChangeListener(){
                 override fun afterTextChanged(p0: Editable?) {
                     super.afterTextChanged(p0)
@@ -85,6 +97,7 @@ class HistoryActivity : BaseActivity() {
             rvHistory.layoutManager = LinearLayoutManager(this@HistoryActivity);
             rvHistory.adapter = historyAdapter
         }
+        //Fetch all the data from app database
         lifecycleScope.launchWhenCreated {
             viewModel.fetchAllHistories()
         }

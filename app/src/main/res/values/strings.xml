@@ -6,8 +6,11 @@
     <string name="no_url_inputed">Please insert an url</string>
     <string name="permission_error">You must have to grant required permissons</string>
     <string name="insertion_success">Data inserted successfully</string>
+    <string name="update_success">Data updated successfully</string>
     <string name="capture_button">Capture</string>
     <string name="history_button">Histories</string>
     <string name="visit_again_button">Visit again</string>
     <string name="delete_button">Delete</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

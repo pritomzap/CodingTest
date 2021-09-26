@@ -9,6 +9,10 @@ import android.webkit.URLUtil
 import okhttp3.HttpUrl
 
 
+/*
+* Some common extension functions
+* */
+
 fun String.isValidUrl(): String? {
     if (!Patterns.WEB_URL.matcher(this).matches()) {
         return "Wrong server address"

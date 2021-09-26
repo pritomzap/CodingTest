@@ -1,5 +1,9 @@
 package com.meldcx.codingtest.service.appConstants
 
+/*
+* A kotlin file where stores the appConstants data.
+* */
+
 const val daoUrlColumnInfo = "url"
 
 const val DATA_BASE_NAME = "meldcx_database"

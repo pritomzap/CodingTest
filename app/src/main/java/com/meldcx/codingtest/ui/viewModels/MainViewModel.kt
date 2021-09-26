@@ -13,6 +13,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
+/*
+* Simple viewModel with BaseViewModel as superclass
+* constructor has reposity and application parameters.
+* implement all 4 operations and 1 extra filtering operations,
+*
+* */
 @HiltViewModel
 class MainViewModel @Inject constructor(private val repository: HistoryRepository, application:Application):BaseViewModel(application) {
 
@@ -45,6 +52,9 @@ class MainViewModel @Inject constructor(private val repository: HistoryRepositor
         flowHandler(_HistoryList){repository.fetchHistoriesWithKeywords(keyword)}
     }
 
+    /*
+    * filtering with chnnels and Flow
+    * */
     /*private val _SearchQueryChannel = Channel<String?>()
 
     fun sentToSearchQueryChannel(queryString: String?) = viewModelScope.launch {

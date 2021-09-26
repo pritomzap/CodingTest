@@ -7,8 +7,13 @@ import androidx.room.RoomDatabase
 import com.meldcx.codingtest.data.models.HistoryEntity
 import com.meldcx.codingtest.service.appConstants.DATA_BASE_NAME
 
+/*
+* App database with a single entity HistoryEntity.
+* it has one abstruct method for DAO.
+* */
 @Database(entities = [HistoryEntity::class], version = 1, exportSchema = false)
 abstract class AppDataBase:RoomDatabase() {
+
 
     abstract fun historyDao():HistoryDao
 

@@ -2,11 +2,18 @@ package com.meldcx.codingtest.ui.activities
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.os.Build
+import android.os.Bundle
 import android.text.TextUtils
+import android.util.AttributeSet
 import android.util.Log
 import android.view.KeyEvent
+import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -41,16 +48,28 @@ import java.io.IOException
 import java.util.*
 import javax.inject.Inject
 
+/*
+* WebViewActivity uses ExperimentalCoroutinesApi
+* Uses databinding layout the setContentview
+* It has a webView and an edittext and 3 buttons
+* Intially history and forward buttons are active.
+* But when we put any text to the edittext the capture button appears.
+* the by pressing the capture button we can captre webView image
+* @AndroidEntryPoint annotation added, so you can inject any dependencies.
+* */
 @AndroidEntryPoint
 @ExperimentalCoroutinesApi
 class WebViewActivity : BaseActivity() {
 
     private lateinit var binding:ActivityWebViewBinding
-    @Inject
-    lateinit var preferenceHelper: PreferenceHelper
     private val viewModel by viewModels<MainViewModel>()
+    private var existEntry:HistoryEntity? = null
+    //permission to write external directory to store imatges
     private val neededPermissionsToWrite = listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    //permission to read info external directory to get stored imatges
     private val neededPermissionsToRead = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+
+    //Permission result of write permission (Because requestPermissonResult is depricated)
     private val permissionResultToWrite = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val granted = permissions.entries.all { it.value == true }
         if (granted) {
@@ -61,6 +80,7 @@ class WebViewActivity : BaseActivity() {
             Toast.makeText(this,getString(R.string.permission_error),Toast.LENGTH_LONG).show()
         }
     }
+    //Permission result of read permission (Because requestPermissonResult is depricated)
     private val permissionResultToRead = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val granted = permissions.entries.all { it.value == true }
         if (granted) {
@@ -69,18 +89,23 @@ class WebViewActivity : BaseActivity() {
             Toast.makeText(this,getString(R.string.permission_error),Toast.LENGTH_LONG).show()
         }
     }
-
+    //Activity result catcher for startActivityResult  (startActivityResult is depricated)
     private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data: Intent? = result.data
             try {
                 val returnData = data?.extras?.getParcelable<HistoryEntity>(RETURN_INTENT_KEY)
-                returnData?.url?.let { binding.webView.loadUrl(it) }
+                returnData?.url?.let {
+                    existEntry = returnData
+                    binding.webView.visible()
+                    binding.btnCapture.visible()
+                    binding.webView.loadUrl(it)
+                }
             }catch (e:Exception){}
         }
     }
 
-
+    //Abstruct function to initialize the view
     override fun initView() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_web_view)
         binding.root.post {
@@ -89,6 +114,15 @@ class WebViewActivity : BaseActivity() {
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            WebView.enableSlowWholeDocumentDraw()
+        }
+    }
+
+
+    //Onclick listeners
     private fun initListener() {
         binding.ivForward.setOnClickListener {
             val urlText = binding.includeSearchLayout.etUrlInput.text.toString()
@@ -135,6 +169,8 @@ class WebViewActivity : BaseActivity() {
         initWebView()
     }
 
+
+    //Initalize webview
     private fun initWebView() {
         binding.webView.apply {
             settings.javaScriptEnabled = true
@@ -183,15 +219,25 @@ class WebViewActivity : BaseActivity() {
     }
 
     private suspend fun createBitmapAndSave(){
-        val webViewBitmap = binding.webView.loadBitmapFromView()
+        val webViewBitmap = binding.webView.createBitmapFromWebView()
         val savedFile = File(handleDirectory(),SAVED_IMAGE_PREFIX+System.currentTimeMillis()+".png")
         try {
             FileOutputStream(savedFile).use { out ->
                 webViewBitmap?.compress(Bitmap.CompressFormat.PNG, 100, out)
                 viewModel.getCurrentUrl()?.let { HistoryEntity(imagePath = savedFile.absolutePath,url = it) }?.let {
                     withContext(Dispatchers.Main){
-                        viewModel.insertHistoryItem(it)
-                        Toast.makeText(this@WebViewActivity,getString(R.string.insertion_success),Toast.LENGTH_LONG).show()
+                        if (existEntry == null) {
+                            viewModel.insertHistoryItem(it)
+                            Toast.makeText(this@WebViewActivity,getString(R.string.insertion_success),Toast.LENGTH_LONG).show()
+                        }else{
+                            val updatedData = it
+                            updatedData.id = existEntry!!.id
+                            val oldFile = File(existEntry!!.imagePath)
+                            if (oldFile.exists())
+                                oldFile.delete()
+                            viewModel.updateHistoryItem(it)
+                            Toast.makeText(this@WebViewActivity,getString(R.string.update_success),Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }
@@ -204,6 +250,32 @@ class WebViewActivity : BaseActivity() {
     private fun historyIntentLaunch() {
         val intent = Intent(this, HistoryActivity::class.java)
         resultLauncher.launch(intent)
+    }
+
+    private fun WebView.createBitmapFromWebView():Bitmap?{
+        this.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED)
+        )
+        //layout of webview
+        this.layout(0, 0, this.measuredWidth, this.getMeasuredHeight())
+
+        this.isDrawingCacheEnabled = true
+        this.buildDrawingCache()
+        //create Bitmap if measured height and width >0
+        val bitmap = if (this.measuredWidth> 0 && this.measuredHeight> 0)Bitmap.createBitmap(
+            this.measuredWidth,
+            this.measuredHeight, Bitmap.Config.ARGB_8888
+        )
+        else null
+        // Draw bitmap on canvas
+        bitmap?.let {
+            Canvas(bitmap).apply {
+                drawBitmap(it, 0f, bitmap.height.toFloat(), Paint())
+                this@createBitmapFromWebView.draw(this)
+            }
+        }
+        return bitmap
     }
 
     private fun handleDirectory():File{

@@ -14,7 +14,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 
 /**
- * Created by Sahidul Islam on 20-Jul-21.
+ * Base activity for some common works
  */
 abstract class BaseActivity : AppCompatActivity() {
 
@@ -76,14 +76,5 @@ abstract class BaseActivity : AppCompatActivity() {
     open fun onShowKeyboard() {}
 
     open fun onHideKeyboard() {}
-
-    protected open fun attachKeyboardListeners() {
-        if (keyboardListenersAttached) {
-            return
-        }
-        getRootView().viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
-        keyboardListenersAttached = true
-    }
-
 
 }
