@@ -1,8 +1,5 @@
 package com.meldcx.codingtest.service.utils
 
-import android.R
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
@@ -45,17 +42,4 @@ fun View.visible() {
 fun View.invisible() {
     if (visibility != View.INVISIBLE)
         visibility = View.INVISIBLE
-}
-
-fun View.loadBitmapFromView(): Bitmap? {
-    this.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-    val bitmap = Bitmap.createBitmap(
-        this.measuredWidth,
-        this.measuredHeight,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    this.layout(0, 0, this.measuredWidth, this.measuredHeight)
-    this.draw(canvas)
-    return bitmap
 }
