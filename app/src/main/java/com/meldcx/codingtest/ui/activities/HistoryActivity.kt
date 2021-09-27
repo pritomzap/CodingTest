@@ -75,7 +75,13 @@ class HistoryActivity : BaseActivity() {
                         viewModel.deleteHistoryItem(eachItem)
                         viewModel.fetchAllHistories()
                     }
-                    btnVisit.setOnClickListener {
+                    tvUrl.setOnClickListener {
+                        val returnIntent = Intent()
+                        returnIntent.putExtra(RETURN_INTENT_KEY, eachItem)
+                        setResult(Activity.RESULT_OK, returnIntent)
+                        finish()
+                    }
+                    ivSnapShot.setOnClickListener {
                         val returnIntent = Intent()
                         returnIntent.putExtra(RETURN_INTENT_KEY, eachItem)
                         setResult(Activity.RESULT_OK, returnIntent)

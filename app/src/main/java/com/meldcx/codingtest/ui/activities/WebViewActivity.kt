@@ -3,10 +3,7 @@ package com.meldcx.codingtest.ui.activities
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
+import android.graphics.*
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -31,7 +28,6 @@ import com.meldcx.codingtest.service.appConstants.SAVED_IMAGE_PREFIX
 import com.meldcx.codingtest.service.utils.gone
 import com.meldcx.codingtest.service.utils.isValidUrl
 import com.meldcx.codingtest.service.utils.visible
-import com.meldcx.codingtest.ui.customViews.CustomProgressDialog
 import com.meldcx.codingtest.ui.viewModels.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +59,7 @@ class WebViewActivity : BaseActivity() {
     private lateinit var binding:ActivityWebViewBinding
     private val viewModel by viewModels<MainViewModel>()
     private var existEntry:HistoryEntity? = null
+    private var isPageIsLoading = false
     //permission to write external directory to store imatges
     private val neededPermissionsToWrite = listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     //permission to read info external directory to get stored imatges
@@ -97,14 +94,17 @@ class WebViewActivity : BaseActivity() {
                 returnData?.url?.let {
                     existEntry = returnData
                     //Fetching and displaying the existing image from file
-                    existEntry?.imagePath?.let{
-                        binding.ivPrevSnapshot.setImageBitmap(getImageFromPath(it))
-                        binding.ivPrevSnapshot.visible()
+                    binding.apply {
+                        existEntry?.imagePath?.let{
+                            ivPrevSnapshot.setImageBitmap(getImageFromPath(it))
+                            ivPrevSnapshot.visible()
+                        }
+                        includeSearchLayout.etUrlInput.setText(existEntry?.url)
+                        tvNoItemLoaded.gone()
+                        webView.visible()
+                        btnCapture.visible()
+                        webView.loadUrl(it)
                     }
-                    binding.tvNoItemLoaded.gone()
-                    binding.webView.visible()
-                    binding.btnCapture.visible()
-                    binding.webView.loadUrl(it)
                 }
             }catch (e:Exception){}
         }
@@ -153,7 +153,10 @@ class WebViewActivity : BaseActivity() {
                 permissionResultToWrite.launch(unAcceptedPermissions.toTypedArray())
             else{
                 lifecycleScope.launch(Dispatchers.IO){
-                    createBitmapAndSave()
+                    if (isPageIsLoading)
+                        withContext(Dispatchers.Main){Toast.makeText(this@WebViewActivity,getString(R.string.page_is_still_loading),Toast.LENGTH_LONG).show()}
+                    else
+                        createBitmapAndSave()
                 }
             }
         }
@@ -182,21 +185,10 @@ class WebViewActivity : BaseActivity() {
             webChromeClient = object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                     super.onProgressChanged(view, newProgress)
-                    try {
-                        if (newProgress <= 90 && !CustomProgressDialog.isShowing()){
-                            CustomProgressDialog.show(this@WebViewActivity)
-                        }else{
-                            CustomProgressDialog.dismiss()
-                            //If an existing image is already on the imageview then when the webview is almost loaded the imageview will be gone
-                            binding.ivPrevSnapshot.gone()
-                        }
-                    }catch (e:Exception){
-                        if (newProgress <= 90){
-                            CustomProgressDialog.show(this@WebViewActivity)
-                        }else{
-                            CustomProgressDialog.dismiss()
-                            binding.ivPrevSnapshot.gone()
-                        }
+                    if (newProgress <= 90){
+                        binding.ivPrevSnapshot.gone()
+                    }else{
+                        binding.ivPrevSnapshot.gone()
                     }
                 }
             }
@@ -205,6 +197,16 @@ class WebViewActivity : BaseActivity() {
                     binding.includeSearchLayout.etUrlInput.setText(request?.url.toString())
                     viewModel.setCurrentUrl(request?.url.toString())
                     return super.shouldOverrideUrlLoading(view, request)
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    isPageIsLoading = false
+                }
+
+                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                    super.onPageStarted(view, url, favicon)
+                    isPageIsLoading = true
                 }
             }
         }
@@ -263,26 +265,22 @@ class WebViewActivity : BaseActivity() {
 
     //Didn't any better solution for creating bitmap from webview :)
     private fun WebView.createBitmapFromWebView():Bitmap?{
-        measure(
-            MeasureSpec.makeMeasureSpec(
-                MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED
-            ),
-            MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-        )
-        layout(0, 0, measuredWidth, measuredHeight)
-        isDrawingCacheEnabled = true
-        buildDrawingCache()
-        val bitmap = Bitmap.createBitmap(
-            measuredWidth,
-            measuredHeight, Bitmap.Config.ARGB_8888
-        )
+        measure(MeasureSpec.makeMeasureSpec(
+            MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED),
+            MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        layout(0, 0, measuredWidth,
+            getMeasuredHeight());
+        isDrawingCacheEnabled = true;
+        buildDrawingCache();
+        val bm = Bitmap.createBitmap(getMeasuredWidth(),
+            measuredHeight, Bitmap.Config.ARGB_8888);
 
-        val canvas = Canvas(bitmap)
+        val bigcanvas = Canvas(bm)
         val paint = Paint()
-        val iHeight = bitmap.height
-        canvas.drawBitmap(bitmap, 0f, iHeight.toFloat(), paint)
-        draw(canvas)
-        return bitmap
+        val iHeight = bm.getHeight().toFloat()
+        bigcanvas.drawBitmap(bm, 0f, iHeight, paint)
+        draw(bigcanvas)
+        return bm
     }
 
     private fun handleDirectory():File{
