@@ -2,18 +2,16 @@ package com.meldcx.codingtest.ui.activities
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.AttributeSet
-import android.util.Log
 import android.view.KeyEvent
-import android.view.View
+import android.view.View.MeasureSpec
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -24,7 +22,6 @@ import androidx.activity.viewModels
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import com.meldcx.codingtest.R
-import com.meldcx.codingtest.data.dataRepository.sharedPreference.PreferenceHelper
 import com.meldcx.codingtest.data.models.HistoryEntity
 import com.meldcx.codingtest.databinding.ActivityWebViewBinding
 import com.meldcx.codingtest.service.appConstants.APP_DIRECTORY
@@ -33,7 +30,6 @@ import com.meldcx.codingtest.service.appConstants.RETURN_INTENT_KEY
 import com.meldcx.codingtest.service.appConstants.SAVED_IMAGE_PREFIX
 import com.meldcx.codingtest.service.utils.gone
 import com.meldcx.codingtest.service.utils.isValidUrl
-import com.meldcx.codingtest.service.utils.loadBitmapFromView
 import com.meldcx.codingtest.service.utils.visible
 import com.meldcx.codingtest.ui.customViews.CustomProgressDialog
 import com.meldcx.codingtest.ui.viewModels.MainViewModel
@@ -46,10 +42,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
-import javax.inject.Inject
+
 
 /*
 * WebViewActivity uses ExperimentalCoroutinesApi
+*
+* INDICATE AS MAINACTIVITY
+*
 * Uses databinding layout the setContentview
 * It has a webView and an edittext and 3 buttons
 * Intially history and forward buttons are active.
@@ -97,6 +96,12 @@ class WebViewActivity : BaseActivity() {
                 val returnData = data?.extras?.getParcelable<HistoryEntity>(RETURN_INTENT_KEY)
                 returnData?.url?.let {
                     existEntry = returnData
+                    //Fetching and displaying the existing image from file
+                    existEntry?.imagePath?.let{
+                        binding.ivPrevSnapshot.setImageBitmap(getImageFromPath(it))
+                        binding.ivPrevSnapshot.visible()
+                    }
+                    binding.tvNoItemLoaded.gone()
                     binding.webView.visible()
                     binding.btnCapture.visible()
                     binding.webView.loadUrl(it)
@@ -105,7 +110,7 @@ class WebViewActivity : BaseActivity() {
         }
     }
 
-    //Abstruct function to initialize the view
+    //override Abstruct function to initialize the view
     override fun initView() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_web_view)
         binding.root.post {
@@ -182,12 +187,15 @@ class WebViewActivity : BaseActivity() {
                             CustomProgressDialog.show(this@WebViewActivity)
                         }else{
                             CustomProgressDialog.dismiss()
+                            //If an existing image is already on the imageview then when the webview is almost loaded the imageview will be gone
+                            binding.ivPrevSnapshot.gone()
                         }
                     }catch (e:Exception){
                         if (newProgress <= 90){
                             CustomProgressDialog.show(this@WebViewActivity)
                         }else{
                             CustomProgressDialog.dismiss()
+                            binding.ivPrevSnapshot.gone()
                         }
                     }
                 }
@@ -252,29 +260,28 @@ class WebViewActivity : BaseActivity() {
         resultLauncher.launch(intent)
     }
 
-    private fun WebView.createBitmapFromWebView():Bitmap?{
-        this.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED)
-        )
-        //layout of webview
-        this.layout(0, 0, this.measuredWidth, this.getMeasuredHeight())
 
-        this.isDrawingCacheEnabled = true
-        this.buildDrawingCache()
-        //create Bitmap if measured height and width >0
-        val bitmap = if (this.measuredWidth> 0 && this.measuredHeight> 0)Bitmap.createBitmap(
-            this.measuredWidth,
-            this.measuredHeight, Bitmap.Config.ARGB_8888
+    //Didn't any better solution for creating bitmap from webview :)
+    private fun WebView.createBitmapFromWebView():Bitmap?{
+        measure(
+            MeasureSpec.makeMeasureSpec(
+                MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED
+            ),
+            MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
         )
-        else null
-        // Draw bitmap on canvas
-        bitmap?.let {
-            Canvas(bitmap).apply {
-                drawBitmap(it, 0f, bitmap.height.toFloat(), Paint())
-                this@createBitmapFromWebView.draw(this)
-            }
-        }
+        layout(0, 0, measuredWidth, measuredHeight)
+        isDrawingCacheEnabled = true
+        buildDrawingCache()
+        val bitmap = Bitmap.createBitmap(
+            measuredWidth,
+            measuredHeight, Bitmap.Config.ARGB_8888
+        )
+
+        val canvas = Canvas(bitmap)
+        val paint = Paint()
+        val iHeight = bitmap.height
+        canvas.drawBitmap(bitmap, 0f, iHeight.toFloat(), paint)
+        draw(canvas)
         return bitmap
     }
 
@@ -284,6 +291,11 @@ class WebViewActivity : BaseActivity() {
         if (!rootDirFile.exists())
             rootDirFile.mkdir()
         return rootDirFile
+    }
+
+    private fun getImageFromPath(path:String?):Bitmap?{
+        val imgFile = File(path)
+        return BitmapFactory.decodeFile(imgFile.absolutePath);
     }
 
     override fun getRootView() = binding.root

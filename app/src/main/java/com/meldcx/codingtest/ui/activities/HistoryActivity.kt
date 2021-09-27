@@ -27,6 +27,9 @@ import java.io.File
 
 /*
 * HistoryActivity uses ExperimentalCoroutinesApi
+*
+* * INDICATE AS SECONDARY ACTIVITY
+*
 * Uses databinding layout the setContentview
 * It has a recyclerView to show all the history items collected form database.
 * @AndroidEntryPoint annotation added, so you can inject any dependencies.
