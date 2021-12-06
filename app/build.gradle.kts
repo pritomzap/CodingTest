@@ -18,7 +18,6 @@ android {
         applicationId  = AppConfig.applicationId
         minSdkVersion (AppConfig.minSdkVersion)
         targetSdkVersion (AppConfig.targetSdkVersion)
-
         versionCode (AppConfig.versionCode)
         versionName (AppConfig.versionName)
         testInstrumentationRunner (AppConfig.testInstrumentationRunner)
@@ -91,6 +90,7 @@ android {
 }
 
 dependencies {
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar","*.aar"))))
     implementation ("org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}")
     implementation ("androidx.core:core-ktx:1.6.0")
     implementation ("androidx.appcompat:appcompat:1.3.1")

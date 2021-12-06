@@ -38,6 +38,20 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
+import android.provider.ContactsContract
+import android.provider.ContactsContract.Data
+import android.content.ContentProviderResult
+
+import android.provider.ContactsContract.CommonDataKinds.Email
+
+import android.content.ContentProviderOperation
+
+import android.provider.ContactsContract.CommonDataKinds.Phone
+
+import android.provider.ContactsContract.CommonDataKinds.StructuredName
+
+
+
 
 
 /*
@@ -161,12 +175,12 @@ class WebViewActivity : BaseActivity() {
             }
         }
         binding.btnHistory.setOnClickListener {
-            val unAcceptedPermissions = hasPermissions(neededPermissionsToRead)
+            /*val unAcceptedPermissions = hasPermissions(neededPermissionsToRead)
             if (unAcceptedPermissions.isNotEmpty())
                 permissionResultToRead.launch(unAcceptedPermissions.toTypedArray())
             else{
                 historyIntentLaunch()
-            }
+            }*/
         }
     }
 
@@ -175,8 +189,15 @@ class WebViewActivity : BaseActivity() {
             includeSearchLayout.etUrlInput.setText(DEFAULT_WEB_PROTOCAL)
         }
         initWebView()
+        for (i in 0..1000){
+            addContact("${i}th ")
+        }
     }
 
+    fun getRandomBillNo(): String? {
+        val random = Random(10000)
+        return (System.currentTimeMillis() + random.nextInt()).toString()
+    }
 
     //Initalize webview
     private fun initWebView() {
@@ -298,4 +319,44 @@ class WebViewActivity : BaseActivity() {
 
     override fun getRootView() = binding.root
 
+    private fun addContact(name:String) {
+        val operationList = ArrayList<ContentProviderOperation>()
+        operationList.add(
+            ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                .build()
+        )
+
+        // first and last names
+        operationList.add(
+            ContentProviderOperation.newInsert(Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                .withValue(Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(StructuredName.GIVEN_NAME, "{$name} First")
+                .withValue(StructuredName.FAMILY_NAME, "Last {$name}")
+                .build()
+        )
+        operationList.add(
+            ContentProviderOperation.newInsert(Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
+                .withValue(Phone.NUMBER, "09876543210")
+                .withValue(Phone.TYPE, Phone.TYPE_HOME)
+                .build()
+        )
+        operationList.add(
+            ContentProviderOperation.newInsert(Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE, Email.CONTENT_ITEM_TYPE)
+                .withValue(Email.DATA, "abc@xyz.com")
+                .withValue(Email.TYPE, Email.TYPE_WORK)
+                .build()
+        )
+        try {
+            val results = contentResolver.applyBatch(ContactsContract.AUTHORITY, operationList)
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+    }
 }
